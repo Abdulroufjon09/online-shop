@@ -12,6 +12,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Category, Product, Review, WishlistItem
+from apps.core.security import image_absolute_url
+
 from .serializers import (
     CategorySerializer,
     ProductDetailSerializer,
@@ -171,7 +173,7 @@ class MyReviewsListView(ListAPIView):
             image = None
             if product.image:
                 try:
-                    image = product.image.url
+                    image = image_absolute_url(request, product.image)
                 except ValueError:
                     image = None
             data.append(
@@ -247,7 +249,7 @@ class WishlistView(APIView):
             image = None
             if p.image:
                 try:
-                    image = p.image.url
+                    image = image_absolute_url(request, p.image)
                 except ValueError:
                     image = None
             results.append(

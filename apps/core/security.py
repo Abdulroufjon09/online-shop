@@ -100,6 +100,35 @@ def optimize_image(upload):
         return None
 
 
+def absolute_media_url(request, url: str) -> str:
+    """
+    Rasm URL'ini mutlaq shaklga keltiradi.
+
+    Frontend boshqa domenda (Vercel) turishi mumkin — nisbiy
+    '/media/...' URL u yerda 404 beradi. Shuning uchun:
+      1) request bo'lsa — request.build_absolute_uri()
+      2) bo'lmasa — WEBHOOK_BASE_URL (backend public manzili)
+    """
+    if not url:
+        return url
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    if request is not None:
+        return request.build_absolute_uri(url)
+    base = getattr(settings, "WEBHOOK_BASE_URL", "") or ""
+    return f"{base}{url}" if base else url
+
+
+def image_absolute_url(request, field_file) -> str:
+    """ImageField/FileField uchun mutlaq URL yoki None."""
+    if not field_file:
+        return None
+    try:
+        return absolute_media_url(request, field_file.url)
+    except Exception:
+        return None
+
+
 def product_image_path(instance, filename: str) -> str:
     """
     Yuklangan rasm nomi hech qachon foydalanuvchi nomi bilan
