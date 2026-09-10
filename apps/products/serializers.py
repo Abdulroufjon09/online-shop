@@ -6,7 +6,19 @@ import uuid
 from django.utils.text import slugify
 from rest_framework import serializers
 
-from apps.core.security import validate_image_upload
+from apps.core.security import optimize_image, validate_image_upload
+
+
+def _prepared_image(upload):
+    """Rasmni siqib (agar mumkin bo'lsa) ContentFile qaytaradi.
+    Nom asl kengaytmasi bilan saqlanadi (JPEG bo'lsa .jpg)."""
+    optimized = optimize_image(upload)
+    if optimized is None:
+        return upload
+    name = getattr(upload, "name", "") or "rasm.jpg"
+    stem = name.rsplit(".", 1)[0][:50] or "rasm"
+    optimized.name = f"{stem}.jpg"
+    return optimized
 
 from .models import Category, Product, ProductImage, Review
 
@@ -232,10 +244,12 @@ class ProductAdminSerializer(serializers.ModelSerializer):
         product.images.all().delete()
         for index, upload in enumerate(files):
             ProductImage.objects.create(
-                product=product, image=upload, position=index
+                product=product,
+                image=_prepared_image(upload),
+                position=index,
             )
-        first = files[0]
-        product.image = first
+        first = product.images.order_by("position").first()
+        product.image = first.image if first else None
         product.save(update_fields=["image"])
 
     def create(self, validated_data):

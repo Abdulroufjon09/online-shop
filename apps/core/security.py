@@ -69,6 +69,37 @@ def random_token_hex(length: int = 24) -> str:
 # ------------------------------------------------------------
 #  Rasm yuklash xavfsizligi
 # ------------------------------------------------------------
+import io
+
+from django.core.files.base import ContentFile
+
+
+def optimize_image(upload):
+    """
+    Katta rasmlarni avtomatik siqish (JPEG, maks 1920px).
+
+    Telefon kameralari 8–12 MB rasm beradi — xotirada qayta kodlaymiz:
+    maksimal 1920px + JPEG sifat 82 (natija odatda 150–500 KB).
+    EXIF aylanishi ham to'g'rilanadi. Buzilgan faylda None qaytaradi.
+    """
+    try:
+        from PIL import Image, ImageOps
+
+        upload.seek(0)
+        img = Image.open(upload)
+        img.load()
+        img = ImageOps.exif_transpose(img)  # EXIF aylanishini to'g'rilash
+        if img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
+        img.thumbnail((1920, 1920), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=82, optimize=True, progressive=True)
+        buf.seek(0)
+        return ContentFile(buf.getvalue())
+    except Exception:
+        return None
+
+
 def product_image_path(instance, filename: str) -> str:
     """
     Yuklangan rasm nomi hech qachon foydalanuvchi nomi bilan
