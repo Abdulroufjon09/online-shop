@@ -1,0 +1,31 @@
+# ============================================================
+#  ONLINE SAVDO — Backend asosiy bog'liqliklari (dev + prod)
+#  Ishga tushirish:  pip install -r requirements.txt
+# ============================================================
+Django>=5.2,<5.3
+djangorestframework>=3.16,<3.17
+djangorestframework-simplejwt>=5.5,<6.0
+django-filter>=25.1,<26.0
+django-cors-headers>=4.7,<5.0
+
+# Production server (Render)
+gunicorn>=23.0,<24.0
+whitenoise>=6.7,<7.0
+
+# PostgreSQL (Render DB)
+psycopg2-binary>=2.9,<3.0
+
+# Rasm yuklash / generatsiya qilish (seed_demo)
+Pillow>=11.0,<12.0
+
+# Parollarni kuchli hashlash (Argon2)
+argon2-cffi>=23.1,<24.0
+
+# Telegram bot (python-telegram-bot)
+python-telegram-bot>=21.6,<22.0
+
+# Background tasklar (ixtiyoriy — devda USE_CELERY=false)
+celery>=5.4,<6.0
+
+# .env faylini o'qish
+python-dotenv>=1.0,<2.0

@@ -1,0 +1,14 @@
+# ============================================================
+#  Production qo'shimcha bog'liqliklari (Docker / server)
+#  Ishga tushirish:  pip install -r requirements-production.txt
+# ============================================================
+-r requirements.txt
+
+# PostgreSQL driveri
+psycopg[binary]>=3.2,<4.0
+
+# Redis klienti (Celery brokeri uchun)
+redis>=5.0,<6.0
+
+# WSGI server (Unix da ishlaydi)
+gunicorn>=23.0,<24.0
