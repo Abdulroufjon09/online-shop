@@ -216,6 +216,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Static fayllarni inline (CSS/JS) ko'p vaqt tsizishgan fayllar uchun cheklangan
 # va cache-busting sozlangan holda WhiteNoise yonida xizmat qiladi.
 STORAGES = {
+    # Model ImageField/FileField (rasmlar) uchun standart storage —
+    # bo'lmasa Django 4.2+ da KeyError: 'default' -> 500 xato.
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
