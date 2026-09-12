@@ -6,7 +6,19 @@ import uuid
 from django.utils.text import slugify
 from rest_framework import serializers
 
-from apps.core.security import validate_image_upload
+from apps.core.security import image_absolute_url, optimize_image, validate_image_upload
+
+
+def _prepared_image(upload):
+    """Rasmni siqib (agar mumkin bo'lsa) ContentFile qaytaradi.
+    Nom asl kengaytmasi bilan saqlanadi (JPEG bo'lsa .jpg)."""
+    optimized = optimize_image(upload)
+    if optimized is None:
+        return upload
+    name = getattr(upload, "name", "") or "rasm.jpg"
+    stem = name.rsplit(".", 1)[0][:50] or "rasm"
+    optimized.name = f"{stem}.jpg"
+    return optimized
 
 from .models import Category, Product, ProductImage, Review
 
