@@ -69,6 +69,66 @@ def random_token_hex(length: int = 24) -> str:
 # ------------------------------------------------------------
 #  Rasm yuklash xavfsizligi
 # ------------------------------------------------------------
+import io
+
+from django.core.files.base import ContentFile
+
+
+def optimize_image(upload):
+    """
+    Katta rasmlarni avtomatik siqish (JPEG, maks 1920px).
+
+    Telefon kameralari 8–12 MB rasm beradi — xotirada qayta kodlaymiz:
+    maksimal 1920px + JPEG sifat 82 (natija odatda 150–500 KB).
+    EXIF aylanishi ham to'g'rilanadi. Buzilgan faylda None qaytaradi.
+    """
+    try:
+        from PIL import Image, ImageOps
+
+        upload.seek(0)
+        img = Image.open(upload)
+        img.load()
+        img = ImageOps.exif_transpose(img)  # EXIF aylanishini to'g'rilash
+        if img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
+        img.thumbnail((1920, 1920), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=82, optimize=True, progressive=True)
+        buf.seek(0)
+        return ContentFile(buf.getvalue())
+    except Exception:
+        return None
+
+
+def absolute_media_url(request, url: str) -> str:
+    """
+    Rasm URL'ini mutlaq shaklga keltiradi.
+
+    Frontend boshqa domenda (Vercel) turishi mumkin — nisbiy
+    '/media/...' URL u yerda 404 beradi. Shuning uchun:
+      1) request bo'lsa — request.build_absolute_uri()
+      2) bo'lmasa — WEBHOOK_BASE_URL (backend public manzili)
+    """
+    if not url:
+        return url
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    if request is not None:
+        return request.build_absolute_uri(url)
+    base = getattr(settings, "WEBHOOK_BASE_URL", "") or ""
+    return f"{base}{url}" if base else url
+
+
+def image_absolute_url(request, field_file) -> str:
+    """ImageField/FileField uchun mutlaq URL yoki None."""
+    if not field_file:
+        return None
+    try:
+        return absolute_media_url(request, field_file.url)
+    except Exception:
+        return None
+
+
 def product_image_path(instance, filename: str) -> str:
     """
     Yuklangan rasm nomi hech qachon foydalanuvchi nomi bilan

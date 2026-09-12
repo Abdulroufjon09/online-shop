@@ -15,6 +15,8 @@ from rest_framework.views import APIView
 
 from apps.core.security import validate_image_upload
 
+from .serializers import _prepared_image
+
 from .models import Category, Product, ProductImage
 from .serializers import CategorySerializer, ProductAdminSerializer, MAX_PRODUCT_IMAGES, MIN_PRODUCT_IMAGES
 
@@ -81,6 +83,7 @@ class AdminProductImagesAddView(APIView):
             )
         for upload in files:
             validate_image_upload(upload)
+        files = [_prepared_image(u) for u in files]
         start = product.images.aggregate(m=models.Max("position"))["m"]
         start = (start + 1) if start is not None else 0
         for offset, upload in enumerate(files):

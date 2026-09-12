@@ -3,6 +3,8 @@
 # ============================================================
 from rest_framework import serializers
 
+from apps.core.security import image_absolute_url
+
 from .models import Order, OrderItem, PickupPoint
 
 
@@ -34,7 +36,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         return {
             "id": obj.product_id,
             "slug": obj.product.slug,
-            "image": obj.product.image.url if obj.product.image else None,
+            "image": image_absolute_url(self.context.get("request"), obj.product.image) if obj.product.image else None,
         }
 
 
@@ -73,7 +75,7 @@ class OrderListSerializer(serializers.ModelSerializer):
             product = item.product
             if product is not None and product.image:
                 try:
-                    image = product.image.url
+                    image = image_absolute_url(None, product.image)
                 except ValueError:
                     image = None
             preview.append(

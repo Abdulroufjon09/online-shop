@@ -6,7 +6,19 @@ import uuid
 from django.utils.text import slugify
 from rest_framework import serializers
 
-from apps.core.security import validate_image_upload
+from apps.core.security import image_absolute_url, optimize_image, validate_image_upload
+
+
+def _prepared_image(upload):
+    """Rasmni siqib (agar mumkin bo'lsa) ContentFile qaytaradi.
+    Nom asl kengaytmasi bilan saqlanadi (JPEG bo'lsa .jpg)."""
+    optimized = optimize_image(upload)
+    if optimized is None:
+        return upload
+    name = getattr(upload, "name", "") or "rasm.jpg"
+    stem = name.rsplit(".", 1)[0][:50] or "rasm"
+    optimized.name = f"{stem}.jpg"
+    return optimized
 
 from .models import Category, Product, ProductImage, Review
 
@@ -59,9 +71,9 @@ class CategorySerializer(serializers.ModelSerializer):
         return obj.products.filter(is_active=True).count()
 
 
-def _gallery_urls(obj) -> list:
-    """Mahsulot rasmlari URL'lari (tartib bo'yicha)."""
-    return [img.image.url for img in obj.images.all()]
+def _gallery_urls(obj, request=None) -> list:
+    """Mahsulot rasmlari URL'lari (tartib bo'yicha, mutlaq)."""
+    return [image_absolute_url(request, img.image) for img in obj.images.all()]
 
 
 class ProductPublicSerializer(serializers.ModelSerializer):
@@ -117,7 +129,8 @@ class ProductDetailSerializer(ProductPublicSerializer):
         fields = ProductPublicSerializer.Meta.fields + ["gallery", "description", "created_at"]
 
     def get_gallery(self, obj) -> list:
-        return _gallery_urls(obj)
+        request = self.context.get("request")
+        return _gallery_urls(obj, request)
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -197,7 +210,8 @@ class ProductAdminSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "slug", "image", "created_at", "updated_at"]
 
     def get_gallery(self, obj) -> list:
-        return _gallery_urls(obj)
+        request = self.context.get("request")
+        return _gallery_urls(obj, request)
 
     def validate_images(self, files):
         files = list(files or [])
@@ -232,10 +246,12 @@ class ProductAdminSerializer(serializers.ModelSerializer):
         product.images.all().delete()
         for index, upload in enumerate(files):
             ProductImage.objects.create(
-                product=product, image=upload, position=index
+                product=product,
+                image=_prepared_image(upload),
+                position=index,
             )
-        first = files[0]
-        product.image = first
+        first = product.images.order_by("position").first()
+        product.image = first.image if first else None
         product.save(update_fields=["image"])
 
     def create(self, validated_data):
@@ -268,7 +284,8 @@ class ProductSellerSerializer(ProductAdminSerializer):
         fields = ProductAdminSerializer.Meta.fields + ["image_items"]
 
     def get_image_items(self, obj) -> list:
+        request = self.context.get("request")
         return [
-            {"id": img.pk, "url": img.image.url}
+            {"id": img.pk, "url": image_absolute_url(request, img.image)}
             for img in obj.images.all()
         ]

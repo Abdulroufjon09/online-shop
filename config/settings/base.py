@@ -216,6 +216,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Static fayllarni inline (CSS/JS) ko'p vaqt tsizishgan fayllar uchun cheklangan
 # va cache-busting sozlangan holda WhiteNoise yonida xizmat qiladi.
 STORAGES = {
+    # Model ImageField/FileField (rasmlar) uchun standart storage —
+    # bo'lmasa Django 4.2+ da KeyError: 'default' → 500 xato.
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
@@ -252,7 +257,13 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SITE_NAME = "Online Savdo"
 PHONE_VERIFY_CODE_TTL_MINUTES = 10
 MAX_VERIFY_ATTEMPTS = 5
-MAX_IMAGE_SIZE_MB = 5
+# Rasm yuklash chegarasi — siqishdan oldingi maksimal hajm.
+# Katta rasmlar optimize_image() orqali avtomatik siqiladi (maks 1920px JPEG).
+MAX_IMAGE_SIZE_MB = 10
+# Django so'rov tanasi chegarasi (10 MB) — 5 ta 10 MB rasm uchun yetarli,
+# chunki ular siqilgach 1 MB dan kichik bo'ladi.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
 
 # Telegram
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()

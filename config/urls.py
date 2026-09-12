@@ -13,7 +13,8 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve as media_serve
 
 from apps.accounts.admin_urls import urlpatterns as accounts_admin_urls
 from apps.discounts.admin_urls import urlpatterns as discounts_admin_urls
@@ -58,3 +59,11 @@ if settings.DEBUG:
     # Dev rejimida media/static fayllarni xizmat ko'rsatish
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Yuklangan rasmlar (/media/) — production'da (DEBUG=False) ham ko'rinishi
+# shart. `static()` helper'i DEBUG=False da bo'sh ro'yxat qaytaradi, shuning
+# uchun bevosita `serve` view ishlatiladi: u faqat MEDIA_ROOT ichidan o'qiydi
+# (path traversal himoyasi o'rnatilgan) va proxy/W bunda WhiteNoise'ga xalaqit bermaydi.
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", media_serve, {"document_root": settings.MEDIA_ROOT}),
+]
